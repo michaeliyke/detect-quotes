@@ -1,0 +1,26 @@
+{
+  "name": "detect-quotes",
+  "version": "1.0.0",
+  "description": "Detect which type of quotes a string is using.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/michaeliyke/detect-quotes.git"
+  },
+  "keywords": [
+    "double-quotes",
+    "single-quotes",
+    "quotes",
+    "string",
+    "quotes"
+  ],
+  "author": "Michael C. Iyke",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/michaeliyke/detect-quotes/issues"
+  },
+  "homepage": "https://github.com/michaeliyke/detect-quotes#readme"
+}
