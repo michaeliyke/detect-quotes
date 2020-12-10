@@ -1,9 +1,15 @@
+const {log} = console;
+const REGEXPs = require("./utils/regex-patterns");
 
 class Part extends String {
 
+  /**
+   * Object to represent each segment of a split line of string
+   * @param  {string} part A unit part of the whole line
+   * @return {Part}
+   */
   constructor(part) {
     super(part); //This creates the string on this
-    this.part = part;
   }
 
   /**
@@ -12,8 +18,7 @@ class Part extends String {
    * @return {Boolean}       Return true or false
    */
   startsWith(token) {
-    const part = this.segment.trim();
-    return part.charAt(0) == token;
+    return startToken == token;
   }
 
   /**
@@ -22,18 +27,15 @@ class Part extends String {
    * @return {Boolean} True or false
    */
   endsWith(token) {
-    const part = this.part.trim();
-    return part.charAt(part.length - 1) == token;
+    return this.endToken == token;
   }
 
   get startToken() {
-    const part = this.part.trim();
-    return part.charAt(0);
+    return this.trim().charAt(0);
   }
 
   get endToken() {
-    const part = this.part.trim();
-    return part.charAt(part.length - 1);
+    return this.trim().charAt(this.length - 1);
   }
 
   /**
@@ -71,9 +73,8 @@ class Part extends String {
    * @return {Boolean} True or false
    */
   get isQuoted() {
-    const part = this;
-    const startToken = part.startToken;
-    const endToken = part.endToken;
+    const startToken = this.startToken;
+    const endToken = this.endToken;
     return startToken == endToken
       && this.quotes.indexOf(startToken) != -1;
   }
@@ -83,16 +84,47 @@ class Part extends String {
 
 class Parts extends Array {
 
-  constructor(...args) {
-    super(...args);
-  // this.parts = [];
+  constructor(partsArray) {
+    if (Array.isArray(partsArray) !== true) {
+      if (typeof partsArray === "string" || typeof partsArray === "number") {
+        super(new Part(partsArray));
+      }
+    }
+
+    if (Array.isArray(partsArray) === true) {
+      const parts = partsArray.map(part => new Part(part));
+      super(...parts);
+    }
+
+  }
+
+  get quoteTokens() {
+    return this.quotedSegments.map(segment => segment.quoteToken);
+  }
+
+  get quotedSegments() {
+    return this.filter(segment => segment.isQuoted);
+  }
+
+  filters(fn) {
+    log("Parts.filter: Here");
+    return this.map((x) => fn(x) == true);
+  }
+
+  getQuoteTokens() {
+    return this.quoteTokens;
   }
 
   each(fn) {
-    // for (const part of this.parts) {
+    let index = 0;
     for (const part of this) {
-      fn(part);
+      fn(part, index++, this);
     }
+  }
+
+  push(...args) {
+    const parts = args.map(arg => new Part(arg));
+    return super.prototype.push.call(this, ...parts)
   }
 
   countQuotedParts() {
@@ -107,21 +139,30 @@ class Parts extends Array {
   }
 
   countQuoteTokens() {
-    const quoteTokens = new set();
+    const quoteTokens = new Set();
     this.each((part) => {
       if (part.isQuoted) {
-        quoteTokens.push(part.quoteToken);
+        quoteTokens.add(part.quoteToken);
       }
     });
-    return quoteTokens.length;
+    return quoteTokens.size;
   }
 }
 
 
-class Test {
 
-  constructor() {
-    this.parts = new Parts();
+class Detect {
+
+  constructor(line) {
+    this.createSingleLineSegments(line);
+  }
+
+  get segments() {
+    return this.parts;
+  }
+
+  get quotedSegments() {
+    return this.segments.quotedSegments;
   }
 
   /**
@@ -129,23 +170,85 @@ class Test {
    * @param  {string} line The single line in consideration
    * @return {Test}      Returns the object instance
    */
-  createSingleLineSegments(line) {}
+  createSingleLineSegments(line) {
+    if (typeof line !== "string" && typeof this.line !== "string") {
+      throw ("createSingleLineSegments: no line specified")
+    }
 
-  testSingleQuotes(line) {
-    // if all is within '', you win => /(^'.*?'$)/
+    if (!line && this.line) {
+      line = this.line;
+    }
 
-    // if there are several strings in a line, 
-    // . . check they're all quoted single => /('.*?')/g
-    // OR /('[^]*?')/g
+    this.line = line;
 
-    // see if they're mixed and indicate what mixes that is
-    // .match(/(['"`].*?['"`])/g) 
-    // OR .match(/['"`].*?['"`]/g)
-    // OR .match(/['"`](.*?)['"`]/g)
+    // This regex covers all three JavaScript quotes cases eg ', ", `
+    const regex = REGEXPs.matchQuotesWithQuotedContents;
+    const quotedParts = line.match(regex);
+    const temp = line.replace(regex, "###detect###quotes###slot").split("###detect");
+    let index = 0;
+    log(temp);
+
+    const parts = [];
+
+    for (const part of temp) {
+      if (part.indexOf("###quotes###slot") != -1) {
+        parts.push(quotedParts[index++], part.replace("###quotes###slot", ""));
+        continue;
+      }
+      parts.push(part);
+    }
+
+    this.parts = new Parts(parts);
+
+    return this;
   }
 
-  testDoubleQuotes(line) {}
+  /**
+   * Check if the default quote token is single quote
+   * @param  {strin} line The given line
+   * @return {Boolean} True or false
+   */
+  testSingleQuotes(line) {
+    /* if (!line && this.line) {
+       throw ("testSingleQuotes: specified argument is not a string");
+     }*/
+    this.createSingleLineSegments(line);
+    const quoteTokens = this.quotedSegments.getQuoteTokens();
+    if (quoteTokens.length == 1 && quoteTokens[0] == "'") {
+      return true;
+    }
+    return false
+  }
 
-  testTilderQuotes(line) {}
+  /**
+   * Check if the default quote token is qouble quote
+   * @param  {string} line The given line
+   * @return {Boolean} True or false
+   */
+  testDoubleQuotes(line) {
+    this.createSingleLineSegments(line);
+    const quoteTokens = this.quotedSegments.getQuoteTokens();
+    if (quoteTokens.length == 1 && quoteTokens[0] == '"') {
+      return true;
+    }
+    return false
+  }
+
+  /**
+   * Check if the default quote token is tilda
+   * @param  {string} line The given line
+   * @return {Boolean} True or false
+   */
+  testTilderQuotes(line) {
+    this.createSingleLineSegments(line);
+    const quoteTokens = this.quotedSegments.getQuoteTokens();
+    if (quoteTokens.length == 1 && quoteTokens[0] == "`") {
+      return true;
+    }
+    return false
+  }
 
 }
+
+
+module.exports = Detect;
