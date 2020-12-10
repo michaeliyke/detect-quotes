@@ -1,0 +1,9 @@
+const email = 'Two ways:' + `Start it, ` + "Then do it!";
+const z = "Depth 'one ` Two \" Three \'Four \` Five ` \' \" ` ' + 'One depth' + `Good stuff`;
+const email = "'Making money' + \", it ain't that hard\" + `Just walk up!`";
+const email = '\'Extra two\' + "That\'s it!" + `Please take note`';
+const email = `'Michael Iyke' + "That\'s What they call me" + \`But call me Iyke\``;
+
+
+
+

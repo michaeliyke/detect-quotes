@@ -18,7 +18,7 @@ class Part extends String {
    * @return {Boolean}       Return true or false
    */
   startsWith(token) {
-    return startToken == token;
+    return this.charAt(0) == token;
   }
 
   /**
@@ -27,7 +27,7 @@ class Part extends String {
    * @return {Boolean} True or false
    */
   endsWith(token) {
-    return this.endToken == token;
+    return this.charAt(this.length - 1) == token;
   }
 
   get startToken() {
@@ -51,9 +51,12 @@ class Part extends String {
    * @return {sting} returns single character
    */
   get quoteToken() {
-    const startToken = this.startToken;
-    const endToken = this.endToken;
-    return startToken != endToken ? null : startToken;
+    if (this.isQuoted) {
+      if (this.startToken in ["\"", "'", "`"] && this.startToken == this.endToken) {
+        return this.startToken
+      }
+    }
+    return null;
   }
 
   get isSingleQuoted() {
@@ -104,11 +107,6 @@ class Parts extends Array {
 
   get quotedSegments() {
     return this.filter(segment => segment.isQuoted);
-  }
-
-  filters(fn) {
-    log("Parts.filter: Here");
-    return this.map((x) => fn(x) == true);
   }
 
   getQuoteTokens() {
@@ -186,8 +184,6 @@ class Detect {
     const quotedParts = line.match(regex);
     const temp = line.replace(regex, "###detect###quotes###slot").split("###detect");
     let index = 0;
-    log(temp);
-
     const parts = [];
 
     for (const part of temp) {
@@ -208,7 +204,7 @@ class Detect {
    * @param  {strin} line The given line
    * @return {Boolean} True or false
    */
-  testSingleQuotes(line) {
+  isSingleQuotes(line) {
     /* if (!line && this.line) {
        throw ("testSingleQuotes: specified argument is not a string");
      }*/
@@ -225,7 +221,7 @@ class Detect {
    * @param  {string} line The given line
    * @return {Boolean} True or false
    */
-  testDoubleQuotes(line) {
+  isDoubleQuotes(line) {
     this.createSingleLineSegments(line);
     const quoteTokens = this.quotedSegments.getQuoteTokens();
     if (quoteTokens.length == 1 && quoteTokens[0] == '"') {
@@ -239,10 +235,19 @@ class Detect {
    * @param  {string} line The given line
    * @return {Boolean} True or false
    */
-  testTilderQuotes(line) {
+  isTildaQuotes(line) {
     this.createSingleLineSegments(line);
     const quoteTokens = this.quotedSegments.getQuoteTokens();
     if (quoteTokens.length == 1 && quoteTokens[0] == "`") {
+      return true;
+    }
+    return false
+  }
+
+  isMixedQuotes(line) {
+    this.createSingleLineSegments(line);
+    const quoteTokens = this.quotedSegments.getQuoteTokens();
+    if (quoteTokens.length > 1) {
       return true;
     }
     return false
